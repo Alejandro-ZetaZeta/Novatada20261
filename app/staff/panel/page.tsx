@@ -36,6 +36,31 @@ export default function PanelStaff() {
     let cancelado = false;
 
     async function verificarSesion() {
+      // 1. localStorage token (written at login, survives hard reload)
+      const tokenLS = localStorage.getItem("staff_access_token");
+      if (tokenLS) {
+        try {
+          const payload = JSON.parse(atob(tokenLS.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
+          const userId = payload.sub as string;
+          const userEmail = (payload.email ?? "") as string;
+          if (userId) {
+            // Restore token into SDK so RLS-gated DB queries work
+            insforgeCliente.setAccessToken(tokenLS);
+            setSesion({ id: userId, email: userEmail });
+            const { data: staffData } = await insforgeCliente.database
+              .from("staff")
+              .select("rol")
+              .eq("id", userId)
+              .single();
+            if (!cancelado && staffData) setRol((staffData as { rol: string }).rol as "staff" | "admin");
+            return;
+          }
+        } catch {
+          localStorage.removeItem("staff_access_token");
+        }
+      }
+
+      // 2. Network fallback (SPA nav: token still in SDK memory)
       const MAX_INTENTOS = 4;
       const DELAY_MS = 700;
 

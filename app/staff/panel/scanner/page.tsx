@@ -11,6 +11,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { insforgeCliente, obtenerSesionActual } from "@/lib/insforge";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import Badge from "@/components/ui/Badge";
 
 // Clave de sessionStorage para el token de sesión del staff
@@ -254,7 +255,7 @@ export default function PaginaScanner() {
       <div style={{ maxWidth: "560px", margin: "0 auto" }}>
         {/* Header */}
         <div style={{ display: "flex", alignItems: "center", gap: "16px", marginBottom: "24px" }}>
-          <a
+          <Link
             href="/staff/panel"
             style={{ color: "var(--color-text-muted)", textDecoration: "none", display: "flex", alignItems: "center", gap: "4px", fontSize: "0.85rem" }}
           >
@@ -262,7 +263,7 @@ export default function PaginaScanner() {
               <path d="M19 12H5M12 19l-7-7 7-7" />
             </svg>
             Panel
-          </a>
+          </Link>
           <h1 style={{ margin: 0, fontSize: "1.3rem" }}>Control de Puerta</h1>
         </div>
 
