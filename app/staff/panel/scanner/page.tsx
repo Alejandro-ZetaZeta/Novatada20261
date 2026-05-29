@@ -179,8 +179,7 @@ export default function PaginaScanner() {
       }
     }
 
-    animRef.current = requestAnimationFrame(escanearFrame);
-  }
+    animRef.current = requestAnimationFrame(escanearFrame);  }
 
   // ── Confirmar ingreso ─────────────────────────────────────
   async function confirmarIngreso() {
