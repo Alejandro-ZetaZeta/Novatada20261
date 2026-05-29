@@ -33,7 +33,8 @@ export default function PaginaLoginStaff() {
       }
 
       // Persist token so scanner page survives hard reload on mobile
-      const token = (dataSesion as unknown as { session?: { access_token?: string } })?.session?.access_token;
+      // SDK is memory-only; hard reload wipes session, so we store it ourselves
+      const token = (dataSesion as unknown as { accessToken?: string })?.accessToken;
       if (token) {
         localStorage.setItem("staff_access_token", token);
       }
