@@ -39,10 +39,20 @@ const nextConfig: NextConfig = {
             key: "Referrer-Policy",
             value: "strict-origin-when-cross-origin",
           },
-          // Deshabilita acceso a APIs sensibles del navegador
+          // Deshabilita acceso a APIs sensibles del navegador (páginas públicas)
           {
             key: "Permissions-Policy",
             value: "camera=(), microphone=(), geolocation=()",
+          },
+        ],
+      },
+      // ── Scanner QR: necesita acceso a la cámara ───────────
+      {
+        source: "/staff/panel/scanner",
+        headers: [
+          {
+            key: "Permissions-Policy",
+            value: "camera=(self), microphone=(), geolocation=()",
           },
         ],
       },
