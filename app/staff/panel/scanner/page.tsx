@@ -40,14 +40,37 @@ export default function PaginaScanner() {
   const [error, setError] = useState("");
   const [busquedaCedula, setBusquedaCedula] = useState("");
 
-  // Verificar sesión
+  // Verificar sesión con reintentos (necesario para WebViews móviles
+  // como WhatsApp/Instagram que inicializan storage de forma asíncrona)
   useEffect(() => {
+    let cancelado = false;
+
     async function verificar() {
-      const sesion = await obtenerSesionActual();
-      if (!sesion) { router.push("/staff/login"); return; }
-      setSesion({ token: sesion.accessToken });
+      const MAX_INTENTOS = 4;
+      const DELAY_MS = 700;
+
+      for (let intento = 0; intento < MAX_INTENTOS; intento++) {
+        const sesionActual = await obtenerSesionActual();
+        if (cancelado) return;
+
+        if (sesionActual) {
+          setSesion({ token: sesionActual.accessToken });
+          return;
+        }
+
+        // Último intento fallido → redirigir al login
+        if (intento === MAX_INTENTOS - 1) {
+          router.push("/staff/login");
+          return;
+        }
+
+        // Esperar antes del siguiente intento
+        await new Promise((r) => setTimeout(r, DELAY_MS));
+      }
     }
+
     verificar();
+    return () => { cancelado = true; };
   }, [router]);
 
   // ── Iniciar cámara ────────────────────────────────────────

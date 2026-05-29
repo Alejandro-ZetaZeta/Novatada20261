@@ -31,24 +31,41 @@ export default function PanelStaff() {
   const [vista, setVista] = useState<Vista>("ordenes");
   const [contadoresGlobales, setContadoresGlobales] = useState({ pendiente: 0, aprobado: 0, anulado: 0 });
 
-  // ── Verificar sesión ──────────────────────────────────────
+  // Verificar sesión con reintentos (WebViews móviles inicializan storage tarde)
   useEffect(() => {
-    async function verificarSesion() {
-      const sesion = await obtenerSesionActual();
-      if (!sesion) {
-        router.push("/staff/login");
-        return;
-      }
-      setSesion({ id: sesion.user.id, email: sesion.user.email });
+    let cancelado = false;
 
-      const { data: staffData } = await insforgeCliente.database
-        .from("staff")
-        .select("rol")
-        .eq("id", sesion.user.id)
-        .single();
-      if (staffData) setRol((staffData as { rol: string }).rol as "staff" | "admin");
+    async function verificarSesion() {
+      const MAX_INTENTOS = 4;
+      const DELAY_MS = 700;
+
+      for (let intento = 0; intento < MAX_INTENTOS; intento++) {
+        const sesionActual = await obtenerSesionActual();
+        if (cancelado) return;
+
+        if (sesionActual) {
+          setSesion({ id: sesionActual.user.id, email: sesionActual.user.email });
+
+          const { data: staffData } = await insforgeCliente.database
+            .from("staff")
+            .select("rol")
+            .eq("id", sesionActual.user.id)
+            .single();
+          if (!cancelado && staffData) setRol((staffData as { rol: string }).rol as "staff" | "admin");
+          return;
+        }
+
+        if (intento === MAX_INTENTOS - 1) {
+          router.push("/staff/login");
+          return;
+        }
+
+        await new Promise((r) => setTimeout(r, DELAY_MS));
+      }
     }
+
     verificarSesion();
+    return () => { cancelado = true; };
   }, [router]);
 
   // ── Cargar órdenes ────────────────────────────────────────
