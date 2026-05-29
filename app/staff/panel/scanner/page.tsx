@@ -52,34 +52,45 @@ export default function PaginaScanner() {
     let cancelado = false;
 
     async function verificar() {
-      // 1. Intentar restaurar desde sessionStorage (sobrevive suspensión del WebView)
-      const tokenGuardado = sessionStorage.getItem(SESSION_KEY);
-      if (tokenGuardado) {
-        setSesion({ token: tokenGuardado });
-        // Pre-cargar jsQR mientras la cámara no está activa
+      const precargarJsQR = () =>
         import("jsqr").then(({ default: fn }) => { jsqrRef.current = fn; });
+
+      // 1. localStorage: escrito en login, sobrevive recargas completas en móvil
+      const tokenLS = localStorage.getItem(SESSION_KEY);
+      if (tokenLS) {
+        sessionStorage.setItem(SESSION_KEY, tokenLS);
+        setSesion({ token: tokenLS });
+        precargarJsQR();
         return;
       }
 
-      // 2. Si no hay token guardado, intentar obtener sesión de InsForge
-      const MAX_INTENTOS = 5;
-      const DELAY_MS = 600;
+      // 2. sessionStorage: fallback por si el WebView perdió localStorage
+      const tokenSS = sessionStorage.getItem(SESSION_KEY);
+      if (tokenSS) {
+        setSesion({ token: tokenSS });
+        precargarJsQR();
+        return;
+      }
+
+      // 3. Red: último recurso, con más reintentos para redes móviles lentas
+      const MAX_INTENTOS = 10;
+      const DELAY_MS = 800;
 
       for (let intento = 0; intento < MAX_INTENTOS; intento++) {
         const sesionActual = await obtenerSesionActual();
         if (cancelado) return;
 
-        if (sesionActual) {
-          // Guardar en sessionStorage para sobrevivir reinicios del WebView
+        if (sesionActual?.accessToken) {
+          localStorage.setItem(SESSION_KEY, sesionActual.accessToken);
           sessionStorage.setItem(SESSION_KEY, sesionActual.accessToken);
           setSesion({ token: sesionActual.accessToken });
-          // Pre-cargar jsQR
-          import("jsqr").then(({ default: fn }) => { jsqrRef.current = fn; });
+          precargarJsQR();
           return;
         }
 
         if (intento === MAX_INTENTOS - 1) {
           sessionStorage.removeItem(SESSION_KEY);
+          localStorage.removeItem(SESSION_KEY);
           router.push("/staff/login");
           return;
         }

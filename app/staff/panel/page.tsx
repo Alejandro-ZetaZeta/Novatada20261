@@ -122,6 +122,7 @@ export default function PanelStaff() {
   // ── Cerrar sesión ─────────────────────────────────────────
   async function cerrarSesion() {
     sessionStorage.removeItem("staff_access_token");
+    localStorage.removeItem("staff_access_token");
     await insforgeCliente.auth.signOut();
     router.push("/staff/login");
   }

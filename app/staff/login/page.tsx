@@ -22,7 +22,7 @@ export default function PaginaLoginStaff() {
     setCargando(true);
 
     try {
-      const { error: errAuth } = await insforgeCliente.auth.signInWithPassword({
+      const { data: dataSesion, error: errAuth } = await insforgeCliente.auth.signInWithPassword({
         email,
         password,
       });
@@ -30,6 +30,12 @@ export default function PaginaLoginStaff() {
       if (errAuth) {
         setError("Credenciales incorrectas. Verifica tu email y contraseña.");
         return;
+      }
+
+      // Persist token so scanner page survives hard reload on mobile
+      const token = (dataSesion as unknown as { session?: { access_token?: string } })?.session?.access_token;
+      if (token) {
+        localStorage.setItem("staff_access_token", token);
       }
 
       router.push("/staff/panel");
