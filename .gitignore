@@ -1,0 +1,33 @@
+
+# InsForge & AI agent skills
+.insforge
+.agent
+.agents
+.augment
+.claude
+.cline
+.github/copilot*
+.kilocode
+.qoder
+.qwen
+.roo
+.trae
+.windsurf
+
+# Next.js
+.next/
+out/
+build/
+
+# Dependencias
+node_modules/
+temp-scaffold/
+
+.env.local
+.env*.local
+.env
+
+# Misc
+.DS_Store
+*.pem
+*.log
