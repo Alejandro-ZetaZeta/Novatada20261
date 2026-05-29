@@ -2,6 +2,7 @@
   "name": "novatada20261",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "pnpm@11.4.0",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -33,11 +34,5 @@
     "node": ">=20",
     "pnpm": ">=11"
   },
-  "devEngines": {
-    "packageManager": {
-      "name": "pnpm",
-      "version": "^11.1.2",
-      "onFail": "download"
-    }
-  }
 }
+
