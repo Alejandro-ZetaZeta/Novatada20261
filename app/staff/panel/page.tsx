@@ -29,6 +29,7 @@ export default function PanelStaff() {
   const [busqueda, setBusqueda] = useState("");
   const [rol, setRol] = useState<"staff" | "admin" | null>(null);
   const [vista, setVista] = useState<Vista>("ordenes");
+  const [contadoresGlobales, setContadoresGlobales] = useState({ pendiente: 0, aprobado: 0, anulado: 0 });
 
   // ── Verificar sesión ──────────────────────────────────────
   useEffect(() => {
@@ -82,10 +83,24 @@ export default function PanelStaff() {
     }
   }, [filtro]);
 
+  // ── Cargar contadores globales (siempre sin filtro) ───────
+  const cargarContadores = useCallback(async () => {
+    const { data } = await insforgeCliente.database
+      .from("ordenes")
+      .select("estado");
+    if (!data) return;
+    const filas = data as { estado: string }[];
+    setContadoresGlobales({
+      pendiente: filas.filter((o) => o.estado === "pendiente").length,
+      aprobado:  filas.filter((o) => o.estado === "aprobado").length,
+      anulado:   filas.filter((o) => o.estado === "anulado").length,
+    });
+  }, []);
+
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (sesion) cargarOrdenes();
-  }, [sesion, filtro, cargarOrdenes]);
+    if (sesion) { cargarOrdenes(); cargarContadores(); }
+  }, [sesion, filtro, cargarOrdenes, cargarContadores]);
 
   // ── Cerrar sesión ─────────────────────────────────────────
   async function cerrarSesion() {
@@ -115,12 +130,8 @@ export default function PanelStaff() {
     });
   }
 
-  // ── Contadores ────────────────────────────────────────────
-  const contadores = {
-    pendiente: ordenes.filter((o) => o.estado === "pendiente").length,
-    aprobado: ordenes.filter((o) => o.estado === "aprobado").length,
-    anulado: ordenes.filter((o) => o.estado === "anulado").length,
-  };
+  // ── Contadores (globales, independientes del filtro) ─────
+  const contadores = contadoresGlobales;
 
   if (!sesion) {
     return (
@@ -364,7 +375,7 @@ export default function PanelStaff() {
       {modalVenta && (
         <ModalVentaRapida
           onCerrar={() => setModalVenta(false)}
-          onExito={() => { setModalVenta(false); cargarOrdenes(); }}
+          onExito={() => { setModalVenta(false); cargarOrdenes(); cargarContadores(); }}
         />
       )}
 
@@ -373,7 +384,7 @@ export default function PanelStaff() {
           orden={ordenSeleccionada}
           rol={rol ?? "staff"}
           onCerrar={() => setOrdenSeleccionada(null)}
-          onAprobada={() => { setOrdenSeleccionada(null); cargarOrdenes(); }}
+          onAprobada={() => { setOrdenSeleccionada(null); cargarOrdenes(); cargarContadores(); }}
         />
       )}
     </main>

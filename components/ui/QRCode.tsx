@@ -20,7 +20,7 @@ interface QRCodeProps {
   estado: string;
 }
 
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? "https://novatada2026.vercel.app";
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? "https://novatada20261.vercel.app";
 
 export default function QRCode({ uuid, tamaño = 200, estado }: QRCodeProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);

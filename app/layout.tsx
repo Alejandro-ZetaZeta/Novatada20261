@@ -7,18 +7,18 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://novatada2026.vercel.app"),
+  metadataBase: new URL("https://novatada20261.vercel.app"),
   title: "Novatada ULEAM 2026 — Entradas Digitales",
   description:
     "Adquiere tu entrada digital para la Novatada ULEAM Chone 2026. Sistema seguro de tickets con código QR. Asociación de Estudiantes Uleam Chone.",
   keywords: ["novatada", "uleam", "chone", "fiesta universitaria", "tickets", "entradas"],
   alternates: {
-    canonical: "https://novatada2026.vercel.app",
+    canonical: "https://novatada20261.vercel.app",
   },
   openGraph: {
     title: "Novatada ULEAM 2026 — Entradas Digitales",
     description: "¡La fiesta universitaria más esperada del año! Adquiere tu entrada digital.",
-    url: "https://novatada2026.vercel.app",
+    url: "https://novatada20261.vercel.app",
     siteName: "Novatada ULEAM 2026",
     type: "website",
     locale: "es_EC",
@@ -40,7 +40,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="es">
+    <html lang="es" data-scroll-behavior="smooth">
       <body suppressHydrationWarning>
         {children}
       </body>

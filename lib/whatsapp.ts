@@ -55,7 +55,7 @@ export function generarUrlWhatsApp(
   cantidad: number
 ): string {
   const numeroWA = telefonoAWhatsApp(telefono);
-  const urlTicket = `${process.env.NEXT_PUBLIC_BASE_URL ?? "https://novatada2026.vercel.app"}/ticket/${uuid}`;
+  const urlTicket = `${process.env.NEXT_PUBLIC_BASE_URL ?? "https://novatada20261.vercel.app"}/ticket/${uuid}`;
 
   const mensaje = [
     `¡Hola ${nombre}! 🎉`,
@@ -86,7 +86,7 @@ export function generarUrlWaMe(
   cantidad: number
 ): string {
   const numeroWA = telefonoAWhatsApp(telefono);
-  const urlTicket = `${process.env.NEXT_PUBLIC_BASE_URL ?? "https://novatada2026.vercel.app"}/ticket/${uuid}`;
+  const urlTicket = `${process.env.NEXT_PUBLIC_BASE_URL ?? "https://novatada20261.vercel.app"}/ticket/${uuid}`;
 
   const mensaje = encodeURIComponent(
     `¡Hola ${nombre}! Tu entrada Novatada ULEAM 2026 está aprobada (grupo de ${cantidad}). Ticket: ${urlTicket}`
