@@ -13,6 +13,9 @@ import { insforgeCliente, obtenerSesionActual } from "@/lib/insforge";
 import { useRouter } from "next/navigation";
 import Badge from "@/components/ui/Badge";
 
+// Clave de sessionStorage para el token de sesión del staff
+const SESSION_KEY = "staff_access_token";
+
 interface DatosValidacion {
   ok: boolean;
   mensaje: string;
@@ -32,6 +35,9 @@ export default function PaginaScanner() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animRef = useRef<number>(0);
+  // jsQR se importa una sola vez y se guarda aquí
+  const jsqrRef = useRef<((data: Uint8ClampedArray, w: number, h: number) => { data: string } | null) | null>(null);
+  const ultimoFrameRef = useRef<number>(0);
   const [escaneando, setEscaneando] = useState(false);
   const [cargando, setCargando] = useState(false);
   const [sesion, setSesion] = useState<{ token: string } | null>(null);
@@ -40,31 +46,44 @@ export default function PaginaScanner() {
   const [error, setError] = useState("");
   const [busquedaCedula, setBusquedaCedula] = useState("");
 
-  // Verificar sesión con reintentos (necesario para WebViews móviles
-  // como WhatsApp/Instagram que inicializan storage de forma asíncrona)
+  // Verificar sesión con reintentos + respaldo en sessionStorage
+  // (WebViews móviles como WhatsApp inicializan storage de forma asíncrona)
   useEffect(() => {
     let cancelado = false;
 
     async function verificar() {
-      const MAX_INTENTOS = 4;
-      const DELAY_MS = 700;
+      // 1. Intentar restaurar desde sessionStorage (sobrevive suspensión del WebView)
+      const tokenGuardado = sessionStorage.getItem(SESSION_KEY);
+      if (tokenGuardado) {
+        setSesion({ token: tokenGuardado });
+        // Pre-cargar jsQR mientras la cámara no está activa
+        import("jsqr").then(({ default: fn }) => { jsqrRef.current = fn; });
+        return;
+      }
+
+      // 2. Si no hay token guardado, intentar obtener sesión de InsForge
+      const MAX_INTENTOS = 5;
+      const DELAY_MS = 600;
 
       for (let intento = 0; intento < MAX_INTENTOS; intento++) {
         const sesionActual = await obtenerSesionActual();
         if (cancelado) return;
 
         if (sesionActual) {
+          // Guardar en sessionStorage para sobrevivir reinicios del WebView
+          sessionStorage.setItem(SESSION_KEY, sesionActual.accessToken);
           setSesion({ token: sesionActual.accessToken });
+          // Pre-cargar jsQR
+          import("jsqr").then(({ default: fn }) => { jsqrRef.current = fn; });
           return;
         }
 
-        // Último intento fallido → redirigir al login
         if (intento === MAX_INTENTOS - 1) {
+          sessionStorage.removeItem(SESSION_KEY);
           router.push("/staff/login");
           return;
         }
 
-        // Esperar antes del siguiente intento
         await new Promise((r) => setTimeout(r, DELAY_MS));
       }
     }
@@ -98,7 +117,7 @@ export default function PaginaScanner() {
     setEscaneando(false);
   }
 
-  // ── Escanear frames ───────────────────────────────────────
+  // ── Escanear frames (jsQR cargado una sola vez, throttle a 200ms) ────
   const procesarQR = useCallback(async (uuid: string) => {
     if (!sesion || cargando) return;
     detenerCamara();
@@ -106,7 +125,6 @@ export default function PaginaScanner() {
     setError("");
 
     try {
-      // Primero obtener los datos del ticket para mostrar
       const resTicket = await fetch(`/api/tickets/${uuid}`);
       if (resTicket.ok) {
         const datos = await resTicket.json();
@@ -122,6 +140,14 @@ export default function PaginaScanner() {
   function escanearFrame() {
     if (!videoRef.current || !canvasRef.current) return;
 
+    // Throttle: procesar solo 5 frames por segundo para no saturar el móvil
+    const ahora = performance.now();
+    if (ahora - ultimoFrameRef.current < 200) {
+      animRef.current = requestAnimationFrame(escanearFrame);
+      return;
+    }
+    ultimoFrameRef.current = ahora;
+
     const video = videoRef.current;
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
@@ -134,22 +160,26 @@ export default function PaginaScanner() {
     canvas.height = video.videoHeight;
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-    // Usar jsQR dinámicamente
-    import("jsqr").then(({ default: jsQR }) => {
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const code = jsQR(imageData.data, imageData.width, imageData.height);
-
-      if (code?.data) {
-        // Extraer UUID de la URL del QR
-        const match = code.data.match(/\/api\/tickets\/([a-f0-9-]{36})\/validar/);
-        if (match) {
-          procesarQR(match[1]);
-          return;
-        }
-      }
-
+    // jsQR ya está cargado en jsqrRef (importado al verificar sesión)
+    const jsQR = jsqrRef.current;
+    if (!jsQR) {
+      // Todavía cargando — reintentar en el siguiente frame
       animRef.current = requestAnimationFrame(escanearFrame);
-    });
+      return;
+    }
+
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const code = jsQR(imageData.data, imageData.width, imageData.height);
+
+    if (code?.data) {
+      const match = code.data.match(/\/api\/tickets\/([a-f0-9-]{36})\/validar/);
+      if (match) {
+        procesarQR(match[1]);
+        return;
+      }
+    }
+
+    animRef.current = requestAnimationFrame(escanearFrame);
   }
 
   // ── Confirmar ingreso ─────────────────────────────────────
